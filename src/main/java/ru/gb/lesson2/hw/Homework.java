@@ -21,19 +21,32 @@ public class Homework {
 
   static class MyTest {
 
-    @Test
+    @BeforeEach
+    void  beforeTest() {
+      System.out.println("Подготовка к тесту");
+    }
+
+    @Test(order = -2)
     void firstTest() {
       System.out.println("firstTest запущен");
     }
 
+//    @Skip
     @Test
     void secondTest() {
       System.out.println("secondTest запущен");
     }
 
+    @Test(order = 5)
+    void thirdTest() {
+      System.out.println("thirdTest запущен");
+    }
+
+    @AfterEach
+    void  afterTest() {
+      System.out.println("Завершение теста");
+    }
+
   }
-
-
-
 
 }

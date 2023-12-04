@@ -1,9 +1,11 @@
 package ru.gb.lesson2.hw;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class TestProcessor {
@@ -29,14 +31,45 @@ public class TestProcessor {
     }
 
     List<Method> methods = new ArrayList<>();
+    Method beforeEach = null;
+    Method afterEach = null;
     for (Method method : testClass.getDeclaredMethods()) {
-      if (method.isAnnotationPresent(Test.class)) {
+      if (method.isAnnotationPresent(BeforeEach.class)) {
+        checkTestMethod(method);
+        beforeEach = method;
+      }
+      if (method.isAnnotationPresent(Test.class) && !method.isAnnotationPresent(Skip.class)) {
         checkTestMethod(method);
         methods.add(method);
       }
+      if (method.isAnnotationPresent(AfterEach.class)) {
+        checkTestMethod(method);
+        afterEach = method;
+      }
     }
 
-    methods.forEach(it -> runTest(it, testObj));
+    methods.sort((it1, it2) -> it1.getDeclaredAnnotation(Test.class).order() - it2.getDeclaredAnnotation(Test.class).order());
+
+    if (beforeEach != null){
+      for (Method method: methods) {
+        try {
+          beforeEach.invoke(testObj);
+          runTest(method, testObj);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+          throw new RuntimeException("Не удалось запустить тестовый метод \"" + beforeEach.getName() + "\"");
+        }
+      }
+    } else {
+      methods.forEach(it -> runTest(it, testObj));
+    }
+    if (afterEach != null) {
+      try {
+        afterEach.invoke(testObj);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        throw new RuntimeException("Не удалось запустить тестовый метод \"" + afterEach.getName() + "\"");
+      }
+    }
+
   }
 
   private static void checkTestMethod(Method method) {
